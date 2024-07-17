@@ -73,53 +73,23 @@ void AndOrGraph::most_conservative_valuation() {
       TODO: add your code for exercise 2 (a) here. Ignore the members
       direct_cost, additive_cost, and achiever for now.
     */
-
     while (!queue.empty()) {
-        NodeID current_id = queue.front();
+        NodeID current_node_id = queue.front();
         queue.pop_front();
-        AndOrGraphNode &current_node = nodes[current_id];
+
+        AndOrGraphNode& current_node = nodes[current_node_id];
         current_node.forced_true = true;
-        cout << "Node " << current_id << " forced true." << endl;
 
-        for (NodeID pred_id : current_node.predecessor_ids) {
-            AndOrGraphNode &pred_node = nodes[pred_id];
-            pred_node.num_forced_successors++;
-            cout << "Predecessor " << pred_id << " has " << pred_node.num_forced_successors << " forced successors." << endl;
+        for (NodeID predecessor_id : current_node.predecessor_ids) {
+            AndOrGraphNode& predecessor_node = nodes[predecessor_id];
+            predecessor_node.num_forced_successors++;
 
-            if (pred_node.type == NodeType::AND && pred_node.num_forced_successors == pred_node.successor_ids.size()) {
-                if (!pred_node.forced_true) {
-                    queue.push_back(pred_id);
-                    cout << "Node " << pred_id << " (AND) added to queue." << endl;
-                }
-            } else if (pred_node.type == NodeType::OR && pred_node.num_forced_successors == 1) {
-                if (!pred_node.forced_true) {
-                    queue.push_back(pred_id);
-                    cout << "Node " << pred_id << " (OR) added to queue." << endl;
-                }
+            if (predecessor_node.num_forced_successors == predecessor_node.successor_ids.size()) {
+                queue.push_back(predecessor_id);
             }
         }
     }
 
-    // Verifica se algum nó ainda deveria ser marcado como "forced true"
-    for (AndOrGraphNode &node : nodes) {
-        if (node.type == NodeType::AND && node.successor_ids.empty() && !node.forced_true) {
-            node.forced_true = true;
-            cout << "Node " << node.id << " (AND without successors) marked as forced true." << endl;
-        } else if (node.type == NodeType::OR && !node.forced_true) {
-            bool all_successors_true = true;
-            for (NodeID succ_id : node.successor_ids) {
-                if (!nodes[succ_id].forced_true) {
-                    all_successors_true = false;
-                    break;
-                }
-            }
-            if (all_successors_true) {
-                node.forced_true = true;
-                cout << "Node " << node.id << " (OR with all successors true) marked as forced true." << endl;
-            }
-        }
-    }
-    
 }
 
 void AndOrGraph::weighted_most_conservative_valuation() {
