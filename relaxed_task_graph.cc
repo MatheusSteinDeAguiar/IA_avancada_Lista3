@@ -48,6 +48,16 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
         // Add edges from precondition node to effect node
         graph.add_edge(precondition_node, effect_node);
     }
+
+    // Create edges from initial state to initial facts
+    for (PropositionID id : relaxed_task.initial_state) {
+        graph.add_edge(variable_node_ids[id], initial_node_id);
+    }
+
+    // Create edges from goal facts to goal state
+    for (PropositionID id : relaxed_task.goal) {
+        graph.add_edge(variable_node_ids[id], goal_node_id);
+    }
     
 }
 
