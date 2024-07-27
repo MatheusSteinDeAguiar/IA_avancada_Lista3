@@ -113,6 +113,54 @@ void AndOrGraph::weighted_most_conservative_valuation() {
     /*
       TODO: add your code for exercise 2 (c) here.
     */
+
+    struct Comparator{
+        bool operator()(AndOrGraphNode n1, AndOrGraphNode n2){
+            return n1.additive_cost > n2.additive_cost;
+        }
+    };
+
+    priority_queue<AndOrGraphNode,vector<AndOrGraphNode>,Comparator> queue;
+
+    for (AndOrGraphNode &node : nodes) {
+        node.forced_true = false;
+        node.num_forced_successors = 0;
+        if (node.type == NodeType::AND && node.successor_ids.empty()) {
+            node.additive_cost = 0;
+            queue.push(node);
+        }else{
+            node.additive_cost = std::numeric_limits<int>::max();
+        }
+    }
+
+    while (!queue.empty()) {
+        AndOrGraphNode current = queue.top();
+        queue.pop();
+        current.forced_true = true;
+
+        for (NodeID pred : current.predecessor_ids) {
+            nodes[pred].num_forced_successors++;
+            
+            if (nodes[pred].type == NodeType::OR) {
+
+                int newCost = nodes[pred].direct_cost + current.additive_cost;
+                if(newCost < nodes[pred].additive_cost){
+                    nodes[pred].additive_cost = newCost;
+                    queue.push(nodes[pred]);
+                }
+            } 
+            else if ((nodes[pred].type == NodeType::AND)
+                && (nodes[pred].num_forced_successors == int(nodes[pred].successor_ids.size()))){
+
+                int totalCost = nodes[pred].direct_cost;
+                for(NodeID succ : nodes[pred].successor_ids){
+                    totalCost += nodes[succ].additive_cost;
+                }
+                nodes[pred].additive_cost = totalCost;
+                queue.push(nodes[pred]);
+            }
+        }
+    }
 }
 
 void add_nodes(vector<string> names, NodeType type, AndOrGraph &g, unordered_map<string, NodeID> &ids) {
