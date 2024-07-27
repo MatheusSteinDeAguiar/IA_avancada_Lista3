@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 
 using namespace std;
 
@@ -93,7 +94,46 @@ int RelaxedTaskGraph::additive_cost_of_goal() {
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
     // TODO: add your code for exercise 2 (e) here.
-    return -1;
+    graph.weighted_most_conservative_valuation();
+
+    queue<NodeID> queue;
+    unordered_set<NodeID> expanded;
+
+    int sum_cost = 0;
+
+    queue.push(goal_node_id);
+
+    while(!queue.empty()){
+        AndOrGraphNode current = graph.get_node(queue.front());
+        queue.pop();
+
+        if(expanded.find(current.id) != expanded.end()){
+            continue;
+        }
+
+        expanded.insert(current.id);
+
+        if(current.type == NodeType::AND){
+            for(NodeID id : current.successor_ids){
+                AndOrGraphNode successor = graph.get_node(id);
+
+                if(expanded.find(id) == expanded.end()){
+                    queue.push(id);
+                }
+            }
+        }
+        else if (current.type == NodeType::OR){
+            if(expanded.find(current.achiever) == expanded.end()){
+                queue.push(current.achiever);
+            }
+        }
+    }
+
+    for(NodeID id : expanded){
+        sum_cost += graph.get_node(id).direct_cost;
+    }
+
+    return sum_cost;
 }
 
 }
