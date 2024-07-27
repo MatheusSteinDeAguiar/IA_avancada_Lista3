@@ -1,3 +1,4 @@
+
 #include "relaxed_task_graph.h"
 
 #include <iostream>
@@ -20,45 +21,42 @@ RelaxedTaskGraph::RelaxedTaskGraph(const TaskProxy &task_proxy)
 
     //Create nodes for variables
     for (size_t i = 0; i < relaxed_task.propositions.size(); i++) {
-        variable_node_ids[i] = graph.add_node(NodeType::OR);
+        variable_node_ids[i] = relaxed_task.propositions[i].id;
+        graph.add_node(NodeType::OR);
     }
 
     //Create initial state node
     initial_node_id = graph.add_node(NodeType::AND);
+    // Create edges from initial state to initial facts
+    for (PropositionID id : relaxed_task.initial_state) {
+        graph.add_edge(id, initial_node_id);
+    }
 
     //Create goal state node
     goal_node_id = graph.add_node(NodeType::AND);
+    // Create edges from goal facts to goal state
+    for (PropositionID id : relaxed_task.goal) {
+        graph.add_edge(goal_node_id,id);
+    }
 
     // Create nodes for precondition and effect nodes for all operators
-    for (size_t i = 0; i < relaxed_task.operators.size(); i++) {
-        RelaxedOperator op = relaxed_task.operators[i];
-        NodeID precondition_node = graph.add_node(NodeType::AND);
+    for (RelaxedOperator op : relaxed_task.operators) {
+        NodeID operator_node = graph.add_node(NodeType::AND);
         NodeID effect_node = graph.add_node(NodeType::OR, op.cost);
 
         // Add edges from precondition node to variable nodes
         for (PropositionID id : op.preconditions) {
-            graph.add_edge(precondition_node, variable_node_ids[id]);
+            graph.add_edge(operator_node, id);
         }
 
-        // Add edges from effect node to variable nodes
-        for (PropositionID id : op.effects) {
-            graph.add_edge(effect_node, variable_node_ids[id]);
+        // Add edges from effect node to operator node
+        graph.add_edge(effect_node,operator_node);
+
+        //For every conditional effect in the operator
+        for (PropositionID id : op.effects){
+            graph.add_edge(id, effect_node);
         }
-
-        // Add edges from precondition node to effect node
-        graph.add_edge(precondition_node, effect_node);
     }
-
-    // Create edges from initial state to initial facts
-    for (PropositionID id : relaxed_task.initial_state) {
-        graph.add_edge(variable_node_ids[id], initial_node_id);
-    }
-
-    // Create edges from goal facts to goal state
-    for (PropositionID id : relaxed_task.goal) {
-        graph.add_edge(variable_node_ids[id], goal_node_id);
-    }
-    
 }
 
 void RelaxedTaskGraph::change_initial_state(const GlobalState &global_state) {
@@ -89,7 +87,8 @@ int RelaxedTaskGraph::additive_cost_of_goal() {
     // to return the h^add value of the goal node.
 
     // TODO: add your code for exercise 2 (c) here.
-    return -1;
+    graph.weighted_most_conservative_valuation();
+    return graph.get_node(goal_node_id).additive_cost;
 }
 
 int RelaxedTaskGraph::ff_cost_of_goal() {
