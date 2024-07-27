@@ -147,10 +147,18 @@ void AndOrGraph::weighted_most_conservative_valuation() {
                 if(newCost < nodes[pred].additive_cost){
                     nodes[pred].additive_cost = newCost;
                     queue.push(nodes[pred]);
+
+                    nodes[pred].achiever = current.id;
                 }
             } 
             else if ((nodes[pred].type == NodeType::AND)
                 && (nodes[pred].num_forced_successors == int(nodes[pred].successor_ids.size()))){
+
+                /*
+                To compute h_max we would get all the additive_cost + direct_costs
+                of the successors of predecessor_node and set
+                nodes[predecessor_id].additive_cost = MAX of all those values.
+                */
 
                 int totalCost = nodes[pred].direct_cost;
                 for(NodeID succ : nodes[pred].successor_ids){
